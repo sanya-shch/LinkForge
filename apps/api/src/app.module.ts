@@ -3,6 +3,7 @@ import { ConfigModule } from "@nestjs/config";
 import { LoggerModule } from "nestjs-pino";
 import { PrismaModule } from "./prisma/prisma.module";
 import { RedisModule } from "./redis/redis.module";
+import { RateLimitModule } from "./rate-limit/rate-limit.module";
 import { HealthModule } from "./health/health.module";
 import { LinksModule } from "./links/links.module";
 import { RedirectModule } from "./redirect/redirect.module";
@@ -21,6 +22,7 @@ import { RedirectModule } from "./redirect/redirect.module";
     }),
     PrismaModule,
     RedisModule,
+    RateLimitModule,
     HealthModule,
     LinksModule,
     RedirectModule,

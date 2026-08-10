@@ -1,4 +1,5 @@
-import { Body, Controller, Post, UsePipes } from "@nestjs/common";
+import { Body, Controller, Post, UseGuards, UsePipes } from "@nestjs/common";
+import { CreateLinkRateLimitGuard } from "../rate-limit/create-link-rate-limit.guard";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import { createLinkSchema, type CreateLinkDto } from "./dto/create-link.schema";
 import { LinksService } from "./links.service";
@@ -8,6 +9,7 @@ export class LinksController {
   constructor(private readonly linksService: LinksService) {}
 
   @Post()
+  @UseGuards(CreateLinkRateLimitGuard)
   @UsePipes(new ZodValidationPipe(createLinkSchema))
   async create(@Body() dto: CreateLinkDto) {
     const link = await this.linksService.create(dto);

@@ -1,7 +1,8 @@
-import { Controller, Get, NotFoundException, Param, Res } from "@nestjs/common";
+import { Controller, Get, NotFoundException, Param, Res, UseGuards } from "@nestjs/common";
 import type { Response } from "express";
 import { LinksCacheService } from "../cache/links-cache.service";
 import { LinksService } from "../links/links.service";
+import { RedirectRateLimitGuard } from "../rate-limit/redirect-rate-limit.guard";
 
 @Controller()
 export class RedirectController {
@@ -11,6 +12,7 @@ export class RedirectController {
   ) {}
 
   @Get(":slug")
+  @UseGuards(RedirectRateLimitGuard)
   async redirect(@Param("slug") slug: string, @Res() res: Response) {
     const cached = await this.cache.get(slug);
 
