@@ -9,12 +9,13 @@ const HITS_COUNTER_KEY = "metrics:redirect_cache:hits";
 const MISSES_COUNTER_KEY = "metrics:redirect_cache:misses";
 
 export interface CachedLink {
+  id: string;
   originalUrl: string;
   isActive: boolean;
   expiresAt: string | null;
 }
 
-type CacheableLink = Pick<Link, "slug" | "originalUrl" | "isActive" | "expiresAt">;
+type CacheableLink = Pick<Link, "id" | "slug" | "originalUrl" | "isActive" | "expiresAt">;
 
 @Injectable()
 export class LinksCacheService {
@@ -28,8 +29,16 @@ export class LinksCacheService {
       return null;
     }
 
+    const parsed = JSON.parse(raw) as Partial<CachedLink>;
+
+    if (!parsed.id) {
+      await this.redis.del(this.key(slug));
+      await this.redis.incr(MISSES_COUNTER_KEY);
+      return null;
+    }
+
     await this.redis.incr(HITS_COUNTER_KEY);
-    return JSON.parse(raw) as CachedLink;
+    return parsed as CachedLink;
   }
 
   async set(link: CacheableLink): Promise<void> {
@@ -40,6 +49,7 @@ export class LinksCacheService {
     }
 
     const value: CachedLink = {
+      id: link.id,
       originalUrl: link.originalUrl,
       isActive: link.isActive,
       expiresAt: link.expiresAt ? link.expiresAt.toISOString() : null,

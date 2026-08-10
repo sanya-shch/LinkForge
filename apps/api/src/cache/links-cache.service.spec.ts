@@ -28,6 +28,7 @@ describe("LinksCacheService", () => {
   it("parses cached JSON and increments the hit counter on a cache hit", async () => {
     redis.get.mockResolvedValueOnce(
       JSON.stringify({
+        id: "link-present",
         originalUrl: "https://a.example.com",
         isActive: true,
         expiresAt: null,
@@ -37,6 +38,7 @@ describe("LinksCacheService", () => {
     const result = await service.get("present");
 
     expect(result).toEqual({
+      id: "link-present",
       originalUrl: "https://a.example.com",
       isActive: true,
       expiresAt: null,
@@ -44,8 +46,26 @@ describe("LinksCacheService", () => {
     expect(redis.incr).toHaveBeenCalledWith("metrics:redirect_cache:hits");
   });
 
+  it("treats a cache entry with no id (stale pre-migration schema) as a miss and deletes it", async () => {
+    redis.get.mockResolvedValueOnce(
+      JSON.stringify({
+        originalUrl: "https://legacy.example.com",
+        isActive: true,
+        expiresAt: null,
+      }),
+    );
+
+    const result = await service.get("legacy-slug");
+
+    expect(result).toBeNull();
+    expect(redis.del).toHaveBeenCalledWith("link:slug:legacy-slug");
+    expect(redis.incr).toHaveBeenCalledWith("metrics:redirect_cache:misses");
+    expect(redis.incr).not.toHaveBeenCalledWith("metrics:redirect_cache:hits");
+  });
+
   it("caches a link with the default TTL when there is no expiry", async () => {
     await service.set({
+      id: "link-1",
       slug: "no-expiry",
       originalUrl: "https://a.example.com",
       isActive: true,
@@ -59,6 +79,7 @@ describe("LinksCacheService", () => {
     const expiresAt = new Date(Date.now() + 30_000);
 
     await service.set({
+      id: "link-2",
       slug: "expiring-soon",
       originalUrl: "https://a.example.com",
       isActive: true,
@@ -73,6 +94,7 @@ describe("LinksCacheService", () => {
 
   it("does not cache a link that is already expired", async () => {
     await service.set({
+      id: "link-3",
       slug: "already-expired",
       originalUrl: "https://a.example.com",
       isActive: true,

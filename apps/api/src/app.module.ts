@@ -1,6 +1,8 @@
+import { BullModule } from "@nestjs/bullmq";
 import { Module } from "@nestjs/common";
-import { ConfigModule } from "@nestjs/config";
+import { ConfigModule, ConfigService } from "@nestjs/config";
 import { LoggerModule } from "nestjs-pino";
+import { AnalyticsModule } from "./analytics/analytics.module";
 import { PrismaModule } from "./prisma/prisma.module";
 import { RedisModule } from "./redis/redis.module";
 import { RateLimitModule } from "./rate-limit/rate-limit.module";
@@ -20,11 +22,26 @@ import { RedirectModule } from "./redirect/redirect.module";
             : { target: "pino-pretty", options: { singleLine: true } },
       },
     }),
+    BullModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => {
+        const redisUrl = new URL(config.get<string>("REDIS_URL", "redis://localhost:6379"));
+
+        return {
+          connection: {
+            host: redisUrl.hostname,
+            port: Number(redisUrl.port || 6379),
+            maxRetriesPerRequest: null,
+          },
+        };
+      },
+    }),
     PrismaModule,
     RedisModule,
     RateLimitModule,
     HealthModule,
     LinksModule,
+    AnalyticsModule,
     RedirectModule,
   ],
 })

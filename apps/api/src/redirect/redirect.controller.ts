@@ -1,5 +1,6 @@
-import { Controller, Get, NotFoundException, Param, Res, UseGuards } from "@nestjs/common";
-import type { Response } from "express";
+import { Controller, Get, NotFoundException, Param, Req, Res, UseGuards } from "@nestjs/common";
+import type { Request, Response } from "express";
+import { ClickTrackerService } from "../analytics/click-tracker.service";
 import { LinksCacheService } from "../cache/links-cache.service";
 import { LinksService } from "../links/links.service";
 import { RedirectRateLimitGuard } from "../rate-limit/redirect-rate-limit.guard";
@@ -9,15 +10,17 @@ export class RedirectController {
   constructor(
     private readonly linksService: LinksService,
     private readonly cache: LinksCacheService,
+    private readonly clickTracker: ClickTrackerService,
   ) {}
 
   @Get(":slug")
   @UseGuards(RedirectRateLimitGuard)
-  async redirect(@Param("slug") slug: string, @Res() res: Response) {
+  async redirect(@Param("slug") slug: string, @Req() req: Request, @Res() res: Response) {
     const cached = await this.cache.get(slug);
 
     if (cached) {
       if (cached.isActive && !this.isExpired(cached.expiresAt)) {
+        void this.clickTracker.track(cached.id, req);
         return res.redirect(302, cached.originalUrl);
       }
 
@@ -35,6 +38,7 @@ export class RedirectController {
     }
 
     await this.cache.set(link);
+    void this.clickTracker.track(link.id, req);
 
     return res.redirect(302, link.originalUrl);
   }
