@@ -1,0 +1,13 @@
+{
+  "name": "linkforge",
+  "private": true,
+  "packageManager": "pnpm@9.0.0",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:api": "pnpm --filter api start:dev",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down"
+  }
+}
