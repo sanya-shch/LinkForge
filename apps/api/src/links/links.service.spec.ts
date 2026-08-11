@@ -12,11 +12,19 @@ function uniqueConstraintError() {
 }
 
 describe("LinksService", () => {
-  let prisma: { link: { create: ReturnType<typeof vi.fn> } };
+  let prisma: {
+    link: {
+      create: ReturnType<typeof vi.fn>;
+      findMany: ReturnType<typeof vi.fn>;
+      count: ReturnType<typeof vi.fn>;
+    };
+  };
   let service: LinksService;
 
   beforeEach(() => {
-    prisma = { link: { create: vi.fn() } };
+    prisma = {
+      link: { create: vi.fn(), findMany: vi.fn(), count: vi.fn() },
+    };
     service = new LinksService(prisma as unknown as PrismaService);
   });
 
@@ -107,5 +115,62 @@ describe("LinksService", () => {
     await expect(service.create({ originalUrl: "https://e.example.com" })).rejects.toThrow(
       "connection refused",
     );
+  });
+});
+
+describe("LinksService.findAll", () => {
+  let prisma: {
+    link: {
+      findMany: ReturnType<typeof vi.fn>;
+      count: ReturnType<typeof vi.fn>;
+    };
+  };
+  let service: LinksService;
+
+  beforeEach(() => {
+    prisma = { link: { findMany: vi.fn(), count: vi.fn() } };
+    service = new LinksService(prisma as unknown as PrismaService);
+  });
+
+  it("paginates using the correct skip/take for a given page and limit", async () => {
+    prisma.link.findMany.mockResolvedValueOnce([]);
+    prisma.link.count.mockResolvedValueOnce(0);
+
+    await service.findAll(3, 20);
+
+    expect(prisma.link.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ skip: 40, take: 20 }),
+    );
+  });
+
+  it("orders results by newest first", async () => {
+    prisma.link.findMany.mockResolvedValueOnce([]);
+    prisma.link.count.mockResolvedValueOnce(0);
+
+    await service.findAll(1, 20);
+
+    expect(prisma.link.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ orderBy: { createdAt: "desc" } }),
+    );
+  });
+
+  it("computes totalPages from the total count and limit", async () => {
+    prisma.link.findMany.mockResolvedValueOnce([]);
+    prisma.link.count.mockResolvedValueOnce(45);
+
+    const result = await service.findAll(1, 20);
+
+    expect(result).toEqual(
+      expect.objectContaining({ total: 45, page: 1, limit: 20, totalPages: 3 }),
+    );
+  });
+
+  it("reports at least 1 total page even when there are no links yet", async () => {
+    prisma.link.findMany.mockResolvedValueOnce([]);
+    prisma.link.count.mockResolvedValueOnce(0);
+
+    const result = await service.findAll(1, 20);
+
+    expect(result.totalPages).toBe(1);
   });
 });

@@ -19,4 +19,15 @@ export class AnalyticsController {
 
     return this.analyticsService.getSummary(link.id);
   }
+
+  @Get(":slug/clicks")
+  async getClicks(@Param("slug") slug: string) {
+    const link = await this.linksService.findBySlug(slug);
+
+    if (!link) {
+      throw new NotFoundException("Short link not found");
+    }
+
+    return this.analyticsService.getRecentClicks(link.id);
+  }
 }

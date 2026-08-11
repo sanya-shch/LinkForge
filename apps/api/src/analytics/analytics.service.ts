@@ -10,6 +10,17 @@ export interface LinkAnalyticsSummary {
   byDay: Array<{ day: string; count: number }>;
 }
 
+export interface ClickLogEntry {
+  id: string;
+  timestamp: Date;
+  country: string | null;
+  browser: string | null;
+  os: string | null;
+  isBot: boolean;
+}
+
+const MAX_CLICK_LOG_ROWS = 1000;
+
 interface DayBucket {
   day: string;
   count: bigint;
@@ -73,5 +84,21 @@ export class AnalyticsService {
         count: Number(row.count),
       })),
     };
+  }
+
+  async getRecentClicks(linkId: string): Promise<ClickLogEntry[]> {
+    return this.prisma.click.findMany({
+      where: { linkId },
+      orderBy: { timestamp: "desc" },
+      take: MAX_CLICK_LOG_ROWS,
+      select: {
+        id: true,
+        timestamp: true,
+        country: true,
+        browser: true,
+        os: true,
+        isBot: true,
+      },
+    });
   }
 }

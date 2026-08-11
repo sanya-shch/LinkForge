@@ -10,7 +10,6 @@
     "lint": "eslint \"{src,test}/**/*.ts\" --fix",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:integration": "echo 'integration tests land in a later stage' && exit 0",
     "test:e2e": "playwright test",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",

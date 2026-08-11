@@ -51,6 +51,27 @@ export class LinksService {
     return this.prisma.link.findUnique({ where: { slug } });
   }
 
+  async findAll(page: number, limit: number) {
+    const skip = (page - 1) * limit;
+
+    const [items, total] = await Promise.all([
+      this.prisma.link.findMany({
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+      }),
+      this.prisma.link.count(),
+    ]);
+
+    return {
+      items,
+      total,
+      page,
+      limit,
+      totalPages: Math.max(1, Math.ceil(total / limit)),
+    };
+  }
+
   private isUniqueConstraintError(err: unknown): err is Prisma.PrismaClientKnownRequestError {
     return (
       err instanceof Prisma.PrismaClientKnownRequestError &&

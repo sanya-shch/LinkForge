@@ -82,3 +82,45 @@ describe("AnalyticsService", () => {
     expect(summary.byCountry).toEqual([]);
   });
 });
+
+describe("AnalyticsService.getRecentClicks", () => {
+  let prisma: { click: { findMany: ReturnType<typeof vi.fn> } };
+  let service: AnalyticsService;
+
+  beforeEach(() => {
+    prisma = { click: { findMany: vi.fn() } };
+    service = new AnalyticsService(prisma as unknown as PrismaService);
+  });
+
+  it("fetches clicks for the given link, newest first, bounded to 1000 rows", async () => {
+    prisma.click.findMany.mockResolvedValueOnce([]);
+
+    await service.getRecentClicks("link-1");
+
+    expect(prisma.click.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { linkId: "link-1" },
+        orderBy: { timestamp: "desc" },
+        take: 1000,
+      }),
+    );
+  });
+
+  it("returns the rows as-is from Prisma", async () => {
+    const rows = [
+      {
+        id: "c1",
+        timestamp: new Date(),
+        country: "US",
+        browser: "Chrome",
+        os: "Mac OS",
+        isBot: false,
+      },
+    ];
+    prisma.click.findMany.mockResolvedValueOnce(rows);
+
+    const result = await service.getRecentClicks("link-1");
+
+    expect(result).toEqual(rows);
+  });
+});
