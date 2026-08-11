@@ -37,6 +37,7 @@ export class ClickProcessor extends WorkerHost {
       });
     } catch (err) {
       this.logger.error(`Failed to record click for link ${linkId}: ${(err as Error).message}`);
+
       throw err;
     }
   }

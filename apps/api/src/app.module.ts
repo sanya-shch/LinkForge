@@ -9,6 +9,7 @@ import { RateLimitModule } from "./rate-limit/rate-limit.module";
 import { HealthModule } from "./health/health.module";
 import { JobsModule } from "./jobs/jobs.module";
 import { LinksModule } from "./links/links.module";
+import { MetricsModule } from "./metrics/metrics.module";
 import { QrModule } from "./qr/qr.module";
 import { RedirectModule } from "./redirect/redirect.module";
 
@@ -40,6 +41,7 @@ import { RedirectModule } from "./redirect/redirect.module";
     }),
     PrismaModule,
     RedisModule,
+    MetricsModule,
     RateLimitModule,
     HealthModule,
     LinksModule,
