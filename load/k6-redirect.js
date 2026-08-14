@@ -1,11 +1,12 @@
 import http from "k6/http";
 import { check, sleep } from "k6";
-import { Trend } from "k6/metrics";
+import { Rate, Trend } from "k6/metrics";
 
 const BASE_URL = __ENV.BASE_URL || "http://localhost:3000";
 const WARM_SLUG = __ENV.SLUG || "k6-warm";
 
 const warmLatency = new Trend("warm_cache_redirect_ms");
+const warm429Ratio = new Rate("warm_cache_429_ratio");
 const coldLatency = new Trend("cold_cache_redirect_ms");
 
 export const options = {
@@ -31,7 +32,13 @@ export const options = {
 
 export function hitWarmSlug() {
   const res = http.get(`${BASE_URL}/${WARM_SLUG}`, { redirects: 0 });
-  warmLatency.add(res.timings.duration);
+  const wasRateLimited = res.status === 429;
+
+  warm429Ratio.add(wasRateLimited);
+  if (!wasRateLimited) {
+    warmLatency.add(res.timings.duration);
+  }
+
   check(res, { "warm: status is 302 or 429": (r) => r.status === 302 || r.status === 429 });
   sleep(0.05);
 }
